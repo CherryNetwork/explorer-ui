@@ -28,7 +28,7 @@ export type AugmentedApi = substrate.Api & explorer.Api & coingecko.Api;
 
 type AdapterName = 'substrateRpc' | 'explorerApi' | 'coingeckoApi';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class PolkadaptService {
   polkadapt: Polkadapt<AugmentedApi>;
   run: (config?: PolkadaptRunConfig | string) => AugmentedApi;
@@ -39,21 +39,21 @@ export class PolkadaptService {
   substrateRpcWsErrorHandler: () => void;
   substrateRpcWsConnectedHandler: () => void;
   substrateRpcWsDisconnectedHandler: () => void;
-  explorerWsUrls = new BehaviorSubject<string[] | null>(null)
-  explorerWsUrl = new BehaviorSubject<string | null>(null)
+  explorerWsUrls = new BehaviorSubject<string[] | null>(null);
+  explorerWsUrl = new BehaviorSubject<string | null>(null);
   explorerWsConnected = new BehaviorSubject(false);
   explorerRegistered = new BehaviorSubject(false);
   exporerWsErrorHandler: () => void;
   explorerWsConnectedHandler: () => void;
   explorerWsDisconnectedHandler: () => void;
   explorerDataErrorHandler: (e: any) => void;
-  explorerDataErrors = new BehaviorSubject<{url: string, error: any}[]>([]);
+  explorerDataErrors = new BehaviorSubject<{ url: string; error: any }[]>([]);
   availableAdapters: {
     [network: string]: {
-      substrateRpc: substrate.Adapter,
-      explorerApi: explorer.Adapter,
-      coingeckoApi: coingecko.Adapter
-    }
+      substrateRpc: substrate.Adapter;
+      explorerApi: explorer.Adapter;
+      coingeckoApi: coingecko.Adapter;
+    };
   } = {};
   badAdapterUrls: { [network: string]: { [K in AdapterName]: string[] } } = {};
   private currentNetwork: string = '';
@@ -76,7 +76,9 @@ export class PolkadaptService {
     // A web worker will keep running, even if the browser tab is inactive, therefor the timer that runs in
     // the worker will only take longer if the computer is suspended or the browser got stalled.
     if (typeof Worker !== 'undefined') {
-      this.sleepDetectorWorker = new Worker(new URL('./polkadapt.worker', import.meta.url));
+      this.sleepDetectorWorker = new Worker(
+        new URL('./polkadapt.worker', import.meta.url)
+      );
       this.sleepDetectorWorker.onmessage = ({ data }) => {
         if (data === 'wake') {
           // Detected a suspended computer or stalled browser. Try and reconnect websockets.
@@ -92,20 +94,20 @@ export class PolkadaptService {
     for (const network of Object.keys(this.config.networks)) {
       this.availableAdapters[network] = {
         substrateRpc: new substrate.Adapter({
-          chain: network
+          chain: network,
         }),
         explorerApi: new explorer.Adapter({
-          chain: network
+          chain: network,
         }),
         coingeckoApi: new coingecko.Adapter({
           chain: network,
-          apiEndpoint: 'https://api.coingecko.com/api/v3/'
-        })
+          apiEndpoint: 'https://api.coingecko.com/api/v3/',
+        }),
       };
       this.badAdapterUrls[network] = {
         substrateRpc: [],
         explorerApi: [],
-        coingeckoApi: []
+        coingeckoApi: [],
       };
     }
   }
@@ -141,7 +143,9 @@ export class PolkadaptService {
     };
     sAdapter.on('disconnected', this.substrateRpcWsDisconnectedHandler);
 
-    this.substrateRpcUrls.next(this.config.networks[network].substrateRpcUrlArray);
+    this.substrateRpcUrls.next(
+      this.config.networks[network].substrateRpcUrlArray
+    );
 
     // Update the Polkascan API url.
     this.configureExplorerWsUrl();
@@ -165,21 +169,23 @@ export class PolkadaptService {
       this.explorerDataErrorHandler = (e) => {
         const error = {
           url: this.explorerWsUrl.value || '',
-          error: e
+          error: e,
         };
-        this.explorerDataErrors.next(this.explorerDataErrors.value.concat([error]));
+        this.explorerDataErrors.next(
+          this.explorerDataErrors.value.concat([error])
+        );
       };
       pAdapter.socket.on('dataError', this.explorerDataErrorHandler);
 
       this.explorerWsConnectedHandler = () => {
-        console.info('Polkascan Explorer API connected');
+        console.info('Cherry Network Explorer API connected');
         this.explorerWsConnected.next(true);
       };
       pAdapter.socket.on('open', this.explorerWsConnectedHandler);
 
       this.explorerWsDisconnectedHandler = () => {
         // This can happen when internet connection went down.
-        console.info('Polkascan Explorer API disconnected');
+        console.info('Cherry Network Explorer API disconnected');
         this.explorerWsConnected.next(false);
       };
       pAdapter.socket.on('close', this.explorerWsDisconnectedHandler);
@@ -192,7 +198,10 @@ export class PolkadaptService {
       // Coingecko adapter could not initialize.
       // For now we unregister the adapter.
       this.polkadapt.unregister(cAdapter);
-      console.error('Coingecko adapter could not be initialized, it is now unregistered from PolkAdapt.', e);
+      console.error(
+        'Coingecko adapter could not be initialized, it is now unregistered from PolkAdapt.',
+        e
+      );
     }
 
     // Reconnect on sleep and/or online event.
@@ -244,15 +253,22 @@ export class PolkadaptService {
   configureSubstrateRpcUrl(): void {
     const network: string = this.currentNetwork;
     const substrateRpcUrls = this.config.networks[network].substrateRpcUrlArray;
-    let substrateRpcUrl = window.localStorage.getItem(`lastUsedSubstrateRpcUrl-${network}`);
+    let substrateRpcUrl = window.localStorage.getItem(
+      `lastUsedSubstrateRpcUrl-${network}`
+    );
     if (!substrateRpcUrl) {
       const badSubstrateRpcUrls = this.badAdapterUrls[network].substrateRpc;
       if (badSubstrateRpcUrls.length >= substrateRpcUrls.length) {
         // All url's are marked bad, so let's just try all of them again.
         badSubstrateRpcUrls.length = 0;
       }
-      substrateRpcUrl = substrateRpcUrls.filter(url => !badSubstrateRpcUrls.includes(url))[0];
-      window.localStorage.setItem(`lastUsedSubstrateRpcUrl-${network}`, substrateRpcUrl);
+      substrateRpcUrl = substrateRpcUrls.filter(
+        (url) => !badSubstrateRpcUrls.includes(url)
+      )[0];
+      window.localStorage.setItem(
+        `lastUsedSubstrateRpcUrl-${network}`,
+        substrateRpcUrl
+      );
     }
     this.availableAdapters[network].substrateRpc.setUrl(substrateRpcUrl);
     this.substrateRpcUrl.next(substrateRpcUrl);
@@ -260,20 +276,28 @@ export class PolkadaptService {
 
   reconnectSubstrateRpc(): void {
     if (this.substrateRpcUrl.value) {
-      const badSubstrateRpcUrls = this.badAdapterUrls[this.currentNetwork].substrateRpc;
+      const badSubstrateRpcUrls =
+        this.badAdapterUrls[this.currentNetwork].substrateRpc;
       badSubstrateRpcUrls.push(this.substrateRpcUrl.value as string);
-      window.localStorage.removeItem(`lastUsedSubstrateRpcUrl-${this.currentNetwork}`);
+      window.localStorage.removeItem(
+        `lastUsedSubstrateRpcUrl-${this.currentNetwork}`
+      );
       this.configureSubstrateRpcUrl();
       if (this.explorerRegistered.value) {
         this.availableAdapters[this.currentNetwork].substrateRpc.connect();
       } else {
-        this.polkadapt.register(this.availableAdapters[this.currentNetwork].substrateRpc);
+        this.polkadapt.register(
+          this.availableAdapters[this.currentNetwork].substrateRpc
+        );
       }
     }
   }
 
   async setSubstrateRpcUrl(url: string): Promise<void> {
-    window.localStorage.setItem(`lastUsedSubstrateRpcUrl-${this.currentNetwork}`, url);
+    window.localStorage.setItem(
+      `lastUsedSubstrateRpcUrl-${this.currentNetwork}`,
+      url
+    );
     this.availableAdapters[this.currentNetwork].substrateRpc.setUrl(url);
     this.substrateRpcUrl.next(url);
     if (this.substrateRpcRegistered.value) {
@@ -281,7 +305,9 @@ export class PolkadaptService {
     } else {
       // Not registered, so let's try this url as well as the others again.
       this.badAdapterUrls[this.currentNetwork].substrateRpc.length = 0;
-      this.polkadapt.register(this.availableAdapters[this.currentNetwork].substrateRpc);
+      this.polkadapt.register(
+        this.availableAdapters[this.currentNetwork].substrateRpc
+      );
       this.explorerRegistered.next(true);
     }
   }
@@ -289,15 +315,22 @@ export class PolkadaptService {
   configureExplorerWsUrl(): void {
     const network: string = this.currentNetwork;
     const explorerWsUrls = this.config.networks[network].explorerWsUrlArray;
-    let explorerWsUrl = window.localStorage.getItem(`lastUsedExplorerWsUrl-${network}`);
+    let explorerWsUrl = window.localStorage.getItem(
+      `lastUsedExplorerWsUrl-${network}`
+    );
     if (!explorerWsUrl) {
       const badExplorerWsUrls = this.badAdapterUrls[network].explorerApi;
       if (badExplorerWsUrls.length >= explorerWsUrls.length) {
         // All url's are marked bad, so let's just try all of them again.
         badExplorerWsUrls.length = 0;
       }
-      explorerWsUrl = explorerWsUrls.filter(url => !badExplorerWsUrls.includes(url))[0];
-      window.localStorage.setItem(`lastUsedExplorerWsUrl-${network}`, explorerWsUrl);
+      explorerWsUrl = explorerWsUrls.filter(
+        (url) => !badExplorerWsUrls.includes(url)
+      )[0];
+      window.localStorage.setItem(
+        `lastUsedExplorerWsUrl-${network}`,
+        explorerWsUrl
+      );
     }
     this.availableAdapters[network].explorerApi.setWsUrl(explorerWsUrl);
     this.explorerWsUrl.next(explorerWsUrl);
@@ -305,20 +338,28 @@ export class PolkadaptService {
 
   reconnectExplorerApi(): void {
     if (this.explorerWsUrl.value) {
-      const badExplorerWsUrls = this.badAdapterUrls[this.currentNetwork].explorerApi;
+      const badExplorerWsUrls =
+        this.badAdapterUrls[this.currentNetwork].explorerApi;
       badExplorerWsUrls.push(this.explorerWsUrl.value as string);
-      window.localStorage.removeItem(`lastUsedExplorerWsUrl-${this.currentNetwork}`);
+      window.localStorage.removeItem(
+        `lastUsedExplorerWsUrl-${this.currentNetwork}`
+      );
       this.configureExplorerWsUrl();
       if (this.explorerRegistered.value) {
         this.availableAdapters[this.currentNetwork].explorerApi.connect();
       } else {
-        this.polkadapt.register(this.availableAdapters[this.currentNetwork].explorerApi);
+        this.polkadapt.register(
+          this.availableAdapters[this.currentNetwork].explorerApi
+        );
       }
     }
   }
 
   async setExplorerWsUrl(url: string): Promise<void> {
-    window.localStorage.setItem(`lastUsedExplorerWsUrl-${this.currentNetwork}`, url);
+    window.localStorage.setItem(
+      `lastUsedExplorerWsUrl-${this.currentNetwork}`,
+      url
+    );
     this.availableAdapters[this.currentNetwork].explorerApi.setWsUrl(url);
     this.explorerWsUrl.next(url);
     if (this.explorerRegistered.value) {
@@ -326,7 +367,9 @@ export class PolkadaptService {
     } else {
       // Not registered, so let's try this url as well as the others again.
       this.badAdapterUrls[this.currentNetwork].explorerApi.length = 0;
-      this.polkadapt.register(this.availableAdapters[this.currentNetwork].explorerApi);
+      this.polkadapt.register(
+        this.availableAdapters[this.currentNetwork].explorerApi
+      );
       this.explorerRegistered.next(true);
     }
   }
