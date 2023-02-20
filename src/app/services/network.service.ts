@@ -82,7 +82,7 @@ export class NetworkService {
     }
 
     if (this.blockHarvester) {
-      // Pause the harvester of the previous network.
+      // Pause the harvester of the previous network
       this.blockHarvester.pause();
     }
 
