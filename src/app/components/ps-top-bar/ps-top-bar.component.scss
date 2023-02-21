@@ -81,9 +81,6 @@ ps-top-bar {
   animation: breathe 1s infinite;
 }
 
-.network-polkadot {
-}
-
 .ps-top-bar-network-selector,
 .ps-top-bar-network-option {
   &:before {
@@ -97,6 +94,13 @@ ps-top-bar {
     position: static;
     border: none;
   }
+}
+
+.network_selector_dropdown {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
 }
 
 .ps-top-bar-network-option--polkadot {

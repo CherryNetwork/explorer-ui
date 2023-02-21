@@ -23,7 +23,10 @@
     mat-button
     [matMenuTriggerFor]="networkMenu"
   >
-    {{ (vars.network | async) || "Network" }}
+    <div class="network_selector_dropdown">
+      {{ (vars.network | async) || "Network" }}
+      <mat-icon>keyboard_arrow_down</mat-icon>
+    </div>
   </button>
   <mat-menu #networkMenu="matMenu">
     <button
