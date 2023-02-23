@@ -22,6 +22,7 @@ import {
   OnInit,
   ViewEncapsulation,
 } from '@angular/core';
+
 import { Router } from '@angular/router';
 import { AppConfig } from '../../app-config';
 

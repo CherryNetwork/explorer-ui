@@ -26,43 +26,40 @@ import { PaginatedListComponentBase } from '../../../../../../common/list-base/p
   selector: 'app-log-list',
   templateUrl: './log-list.component.html',
   styleUrls: ['./log-list.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   listSize = 100;
   visibleColumns = ['icon', 'logID', 'age', 'block', 'type', 'details'];
 
-  constructor(private ns: NetworkService,
-              private pa: PolkadaptService) {
+  constructor(private ns: NetworkService, private pa: PolkadaptService) {
     super(ns);
   }
 
-
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Log>> {
-    return this.pa.run(this.network).polkascan.chain.getLogs(
-      this.listSize,
-      pageKey,
-      blockLimitOffset
-    );
+  createGetItemsRequest(
+    pageKey?: string,
+    blockLimitOffset?: number
+  ): Promise<pst.ListResponse<pst.Log>> {
+    return this.pa
+      .run(this.network)
+      .polkascan.chain.getLogs(this.listSize, pageKey, blockLimitOffset);
   }
 
-
-  createNewItemSubscription(handleItemFn: (item: pst.Log) => void): Promise<() => void> {
-    return this.pa.run(this.network).polkascan.chain.subscribeNewLog(
-      handleItemFn
-    );
+  createNewItemSubscription(
+    handleItemFn: (item: pst.Log) => void
+  ): Promise<() => void> {
+    return this.pa
+      .run(this.network)
+      .polkascan.chain.subscribeNewLog(handleItemFn);
   }
-
 
   sortCompareFn(a: pst.Log, b: pst.Log): number {
     return b.blockNumber - a.blockNumber || b.logIdx - a.logIdx;
   }
 
-
   equalityCompareFn(a: pst.Log, b: pst.Log): boolean {
     return a.blockNumber === b.blockNumber && a.logIdx === b.logIdx;
   }
-
 
   trackFn(i: any, event: pst.Log): string {
     return `${event.blockNumber}-${event.logIdx}`;

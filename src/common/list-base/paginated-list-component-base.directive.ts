@@ -22,17 +22,27 @@ import { debounceTime, filter, map, takeUntil } from 'rxjs/operators';
 import { NetworkService } from '../../app/services/network.service';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 
-
-type SearchInfo = { fromBlock?: number, toBlock?: number, nextBlocksCount?: number, endOfBlockRange?: boolean };
-
+type SearchInfo = {
+  fromBlock?: number;
+  toBlock?: number;
+  nextBlocksCount?: number;
+  endOfBlockRange?: boolean;
+};
 
 @Directive()
-export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy {
+export abstract class PaginatedListComponentBase<T>
+  implements OnInit, OnDestroy
+{
   abstract listSize: number;
 
-  abstract createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<T>>;
+  abstract createGetItemsRequest(
+    pageKey?: string,
+    blockLimitOffset?: number
+  ): Promise<pst.ListResponse<T>>;
 
-  abstract createNewItemSubscription?(handleItemFn: (item: T) => void): Promise<() => void>;
+  abstract createNewItemSubscription?(
+    handleItemFn: (item: T) => void
+  ): Promise<() => void>;
 
   abstract sortCompareFn(a: T, b: T): number;
 
@@ -54,7 +64,7 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   readonly loadingObservable: Observable<boolean>;
   readonly loadingCounterObservable = new BehaviorSubject<number>(0);
   readonly pageLiveObservable = new BehaviorSubject<boolean>(true);
-  readonly hasNextPageObservable = new BehaviorSubject<boolean>(true)
+  readonly hasNextPageObservable = new BehaviorSubject<boolean>(true);
   readonly searchInfoObservable = new BehaviorSubject<SearchInfo>({});
 
   get pageLive(): boolean {
@@ -87,9 +97,11 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   protected onDestroyCalled = false;
 
   constructor(private _ns: NetworkService) {
-    this.loadingObservable = this.loadingCounterObservable.pipe(takeUntil(this.destroyer), map((c) => !!c));
+    this.loadingObservable = this.loadingCounterObservable.pipe(
+      takeUntil(this.destroyer),
+      map((c) => !!c)
+    );
   }
-
 
   ngOnInit(): void {
     this._ns.currentNetwork
@@ -119,21 +131,21 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
           items.splice(0, 0, item);
         }
         items.sort(this.sortCompareFn);
-        items.length = Math.min(items.length, this.listSize);  // Cap the list if it is a live list.
+        items.length = Math.min(items.length, this.listSize); // Cap the list if it is a live list.
         this.items = items;
       });
   }
 
-
   onNetworkChange(network: string, previous?: string): void {
-    typeof this.unsubscribeNewItem === 'function' ? this.unsubscribeNewItem() : null;
+    typeof this.unsubscribeNewItem === 'function'
+      ? this.unsubscribeNewItem()
+      : null;
 
     if (network) {
       this.subscribeNewItem();
       this.getItems();
     }
   }
-
 
   handleItem(item: T): void {
     if (this.onDestroyCalled) {
@@ -145,58 +157,88 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     this.latestItemObservable.next(item);
   }
 
-
   async subscribeNewItem() {
     if (this.onDestroyCalled) {
-      throw new Error('[subscribeNewItem] Component is already in process of destruction.')
+      throw new Error(
+        '[subscribeNewItem] Component is already in process of destruction.'
+      );
     }
 
     // Clean up a possible existing subscription.
     this.unsubscribeNewItem();
 
     if (typeof this.createNewItemSubscription === 'function') {
-      this.unsubscribeNewItemFn = await this.createNewItemSubscription((item) => this.handleItem(item));
+      this.unsubscribeNewItemFn = await this.createNewItemSubscription((item) =>
+        this.handleItem(item)
+      );
     }
   }
 
-
   async getItems(pageKey?: string, blockLimitOffset?: number): Promise<void> {
     if (typeof this.createGetItemsRequest !== 'function') {
-      throw new Error('[getItems] createGetItemsRequest must be a function.')
+      throw new Error('[getItems] createGetItemsRequest must be a function.');
     }
 
     if (this.onDestroyCalled) {
-      throw new Error('[getItems] Component is already in process of destruction.')
+      throw new Error(
+        '[getItems] Component is already in process of destruction.'
+      );
     }
 
     this.loading++;
 
     try {
-      const response = await this.createGetItemsRequest(pageKey, blockLimitOffset);
+      const response = await this.createGetItemsRequest(
+        pageKey,
+        blockLimitOffset
+      );
 
       if (this.onDestroyCalled) {
-        throw new Error('[getItems] Request ignored, component is already in process of destruction.')
+        throw new Error(
+          '[getItems] Request ignored, component is already in process of destruction.'
+        );
       }
 
       this.pageKey = pageKey;
-      this.pagePrev = response.pageInfo ? response.pageInfo.pagePrev || null : null;
-      this.pageNext = response.pageInfo ? response.pageInfo.pageNext || null : null;
-      this.blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
-      this.blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
+      this.pagePrev = response.pageInfo
+        ? response.pageInfo.pagePrev || null
+        : null;
+      this.pageNext = response.pageInfo
+        ? response.pageInfo.pageNext || null
+        : null;
+      this.blockLimitCount = response.pageInfo
+        ? response.pageInfo.blockLimitCount || undefined
+        : undefined;
+      this.blockLimitOffset = response.pageInfo
+        ? response.pageInfo.blockLimitOffset || undefined
+        : undefined;
 
       // Merge list with current list, sort the list.
-      const items = response.objects.concat(this.items.filter((a) =>
-        response.objects.findIndex((b) => this.equalityCompareFn(a, b)) === -1
-      ));
+      const items = response.objects.concat(
+        this.items.filter(
+          (a) =>
+            response.objects.findIndex((b) => this.equalityCompareFn(a, b)) ===
+            -1
+        )
+      );
       this.items = items.sort(this.sortCompareFn);
 
       const searchInfo: SearchInfo = {};
       if (this.blockLimitOffset && this.blockLimitCount) {
         const highestBlockNumber = items[0] && (items[0] as any).blockNumber;
         searchInfo.fromBlock = highestBlockNumber || this.blockLimitOffset;
-        searchInfo.toBlock = Math.max(0, (this.blockLimitOffset as number) - (this.blockLimitCount as number) + 1);
-        searchInfo.nextBlocksCount = Math.min(this.blockLimitCount, this.blockLimitOffset);
-        searchInfo.endOfBlockRange = !this.pageNext && this.blockLimitOffset > this.blockLimitCount
+        searchInfo.toBlock = Math.max(
+          0,
+          (this.blockLimitOffset as number) -
+            (this.blockLimitCount as number) +
+            1
+        );
+        searchInfo.nextBlocksCount = Math.min(
+          this.blockLimitCount,
+          this.blockLimitOffset
+        );
+        searchInfo.endOfBlockRange =
+          !this.pageNext && this.blockLimitOffset > this.blockLimitCount;
       }
       this.searchInfoObservable.next(searchInfo);
 
@@ -204,10 +246,10 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
       if (this.pageNext) {
         nextPageFound = true;
       } else if (this.blockLimitOffset && this.blockLimitCount) {
-        nextPageFound = Math.max(0, this.blockLimitOffset - this.blockLimitCount) > 0;
+        nextPageFound =
+          Math.max(0, this.blockLimitOffset - this.blockLimitCount) > 0;
       }
       this.hasNextPageObservable.next(nextPageFound);
-
     } catch (e) {
       // Ignore for now...
       console.error(e);
@@ -216,7 +258,6 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     this.loading--;
   }
 
-
   unsubscribeNewItem(): void {
     if (typeof this.unsubscribeNewItemFn === 'function') {
       this.unsubscribeNewItemFn();
@@ -224,14 +265,12 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     }
   }
 
-
   async gotoLatestItems(): Promise<void> {
     this.searchInfoObservable.next({});
     this.pageLive = true;
     this.subscribeNewItem();
     await this.getItems();
   }
-
 
   async loadMoreItems(): Promise<void> {
     if (this.pageLive) {
@@ -247,13 +286,15 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     if (this.pageNext) {
       await this.getItems(this.pageNext, this.blockLimitOffset);
     } else if (this.blockLimitOffset && this.blockLimitCount) {
-      const blockLimitOffset = Math.max(0, this.blockLimitOffset - this.blockLimitCount)
+      const blockLimitOffset = Math.max(
+        0,
+        this.blockLimitOffset - this.blockLimitCount
+      );
       if (blockLimitOffset > 0) {
         await this.getItems(undefined, blockLimitOffset);
       }
     }
   }
-
 
   ngOnDestroy(): void {
     this.unsubscribeNewItem();
