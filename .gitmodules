@@ -1,4 +1,4 @@
 [submodule "polkadapt"]
 	path = polkadapt
-	url = https://github.com/CherryNetwork/polkadapt
+	url = git@github.com:CherryNetwork/polkadapt.git
 	branch = main
