@@ -29,7 +29,7 @@ import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defau
 import { IconTheme } from '../../common/identicon/identicon.types';
 import { getSystemIcon } from '../../common/identicon/polkadot-js';
 import { debounceTime, filter, takeUntil } from 'rxjs/operators';
-
+import { Router } from '@angular/router';
 
 export interface NetworkProperties {
   ss58Format: number;
@@ -41,28 +41,32 @@ export interface NetworkProperties {
   iconTheme: IconTheme;
 }
 
-
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class NetworkService {
   private settingNetwork: string;
   private settingNonce = 0;
   currentNetwork = new BehaviorSubject<string>('');
-  currentNetworkProperties = new BehaviorSubject<NetworkProperties | undefined>(undefined);
-  blockHarvester: BlockHarvester
+  currentNetworkProperties = new BehaviorSubject<NetworkProperties | undefined>(
+    undefined
+  );
+  blockHarvester: BlockHarvester;
   online: BehaviorSubject<boolean>;
 
   private defaultDecimals = 12;
   private defaultSS58 = addressDefaults.prefix;
   private defaultSymbol = 'UNIT';
 
-  constructor(private pa: PolkadaptService,
-              private bs: BlockService,
-              private rs: RuntimeService,
-              private ps: PricingService,
-              private vs: VariablesService) {
+  constructor(
+    private pa: PolkadaptService,
+    private bs: BlockService,
+    private rs: RuntimeService,
+    private ps: PricingService,
+    private vs: VariablesService
+  ) {
     this.online = new BehaviorSubject(navigator.onLine);
     window.addEventListener('online', () => this.online.next(true));
     window.addEventListener('offline', () => this.online.next(false));
+    this.setNetwork('Cherry Mainnet');
   }
 
   async setNetwork(network: string): Promise<void> {
@@ -71,14 +75,14 @@ export class NetworkService {
       return;
     }
 
-    const nonce: number = this.settingNonce = this.settingNonce + 1;
+    const nonce: number = (this.settingNonce = this.settingNonce + 1);
     this.settingNetwork = network;
     if (this.currentNetworkProperties.value) {
       this.currentNetworkProperties.next(undefined);
     }
 
     if (this.blockHarvester) {
-      // Pause the harvester of the previous network.
+      // Pause the harvester of the previous network
       this.blockHarvester.pause();
     }
 
@@ -94,7 +98,7 @@ export class NetworkService {
       return;
     }
 
-    const runOnRPC = {chain: network, adapters: ['substrate-rpc']};
+    const runOnRPC = { chain: network, adapters: ['substrate-rpc'] };
 
     // Only the last of concurring calls to this function will continue on the code below.
     if (network) {
@@ -123,9 +127,15 @@ export class NetworkService {
       }
 
       try {
-        systemName = (await this.pa.run(runOnRPC).rpc.system.name())?.toString();
-        specName = await this.pa.run(runOnRPC).runtimeVersion.specName?.toString();
-        systemVersion = (await this.pa.run(runOnRPC).rpc.system.version())?.toString();
+        systemName = (
+          await this.pa.run(runOnRPC).rpc.system.name()
+        )?.toString();
+        specName = await this.pa
+          .run(runOnRPC)
+          .runtimeVersion.specName?.toString();
+        systemVersion = (
+          await this.pa.run(runOnRPC).rpc.system.version()
+        )?.toString();
       } catch (e) {
         console.error(e);
       }
@@ -133,25 +143,36 @@ export class NetworkService {
       try {
         properties = await this.pa.run(runOnRPC).rpc.system.properties();
         if (properties) {
-          chainSS58 = chainSS58 ?? ((properties.ss58Format || (properties as any).ss58Prefix).isSome
-            ? (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number
-            : undefined);
-          chainTokens = chainTokens ?? ((properties.tokenSymbol && properties.tokenSymbol.isSome)
-            ? properties.tokenSymbol.toJSON() as string[]
-            : undefined);
-          chainDecimals = chainDecimals ?? ((properties.tokenDecimals && properties.tokenDecimals.isSome)
-            ? properties.tokenDecimals.toJSON() as number[]
-            : undefined);
+          chainSS58 =
+            chainSS58 ??
+            ((properties.ss58Format || (properties as any).ss58Prefix).isSome
+              ? ((
+                  properties.ss58Format || (properties as any).ss58Prefix
+                ).toJSON() as number)
+              : undefined);
+          chainTokens =
+            chainTokens ??
+            (properties.tokenSymbol && properties.tokenSymbol.isSome
+              ? (properties.tokenSymbol.toJSON() as string[])
+              : undefined);
+          chainDecimals =
+            chainDecimals ??
+            (properties.tokenDecimals && properties.tokenDecimals.isSome
+              ? (properties.tokenDecimals.toJSON() as number[])
+              : undefined);
         }
-
       } catch (e) {
         console.error(e);
       }
 
       const ss58Format: number = chainSS58 ?? this.defaultSS58;
-      const tokenSymbol: string = (chainTokens && chainTokens[0]) ?? this.defaultSymbol;
-      const tokenDecimals: number = (chainDecimals && chainDecimals[0]) ?? this.defaultDecimals;
-      const iconTheme: IconTheme = systemName && specName && getSystemIcon(systemName, specName) || 'substrate';
+      const tokenSymbol: string =
+        (chainTokens && chainTokens[0]) ?? this.defaultSymbol;
+      const tokenDecimals: number =
+        (chainDecimals && chainDecimals[0]) ?? this.defaultDecimals;
+      const iconTheme: IconTheme =
+        (systemName && specName && getSystemIcon(systemName, specName)) ||
+        'substrate';
 
       this.currentNetworkProperties.next({
         ss58Format: ss58Format,
@@ -160,7 +181,7 @@ export class NetworkService {
         systemName: systemName,
         specName: specName,
         systemVersion: systemVersion,
-        iconTheme: iconTheme
+        iconTheme: iconTheme,
       });
     }
 
@@ -168,17 +189,23 @@ export class NetworkService {
 
     // Check if blocks are coming in at the expected block time. If not, trigger reload connection.
     try {
-      const expectedBlockTime = await this.pa.run(runOnRPC).consts.babe.expectedBlockTime;
+      const expectedBlockTime = await this.pa.run(runOnRPC).consts.babe
+        .expectedBlockTime;
       const blockTime: number = (expectedBlockTime as any).toNumber();
       if (Number.isInteger(blockTime)) {
-        this.blockHarvester.headNumber.pipe(
-          skip(1), // Ignore the initial value (or first block)
-          debounceTime((blockTime + 10000)), // 10 seconds after the last expected block
-          takeUntil(this.currentNetwork.pipe( // Stop the subscription when the network changes.
-            filter((n: string) => network !== n),
-            take(1))
+        this.blockHarvester.headNumber
+          .pipe(
+            skip(1), // Ignore the initial value (or first block)
+            debounceTime(blockTime + 10000), // 10 seconds after the last expected block
+            takeUntil(
+              this.currentNetwork.pipe(
+                // Stop the subscription when the network changes.
+                filter((n: string) => network !== n),
+                take(1)
+              )
+            )
           )
-        ).subscribe(this.pa.triggerReconnect)
+          .subscribe(this.pa.triggerReconnect);
       }
     } catch (e) {
       // The expected block time is unknown. No need to do anything.

@@ -16,23 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit, ViewEncapsulation } from '@angular/core';
-import { AppConfig } from '../../app-config';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  ViewEncapsulation,
+} from '@angular/core';
 
+import { Router } from '@angular/router';
+import { AppConfig } from '../../app-config';
 
 @Component({
   templateUrl: 'home.component.html',
   styleUrls: ['home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
 })
 export class HomeComponent implements OnInit {
   networks: string[];
 
-  constructor(private config: AppConfig) {
-  }
+  constructor(private config: AppConfig, private router: Router) {}
 
   ngOnInit(): void {
     this.networks = Object.keys(this.config.networks);
+    this.router.navigateByUrl(`/Cherry Mainnet`);
   }
 }

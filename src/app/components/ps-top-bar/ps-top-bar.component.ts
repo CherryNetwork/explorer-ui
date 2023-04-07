@@ -24,7 +24,7 @@ import {
   OnDestroy,
   OnInit,
   Renderer2,
-  ViewEncapsulation
+  ViewEncapsulation,
 } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { Router } from '@angular/router';
@@ -41,7 +41,7 @@ import { PsConnectionDialogComponent } from '../ps-connection-dialog/ps-connecti
   selector: 'ps-top-bar',
   styleUrls: ['ps-top-bar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
 })
 export class PsTopBarComponent implements OnInit, OnDestroy {
   networks: string[];
@@ -49,24 +49,22 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
 
   private destroyer = new Subject();
 
-  constructor(private host: ElementRef,
-              private renderer: Renderer2,
-              private cd: ChangeDetectorRef,
-              private router: Router,
-              private config: AppConfig,
-              public pa: PolkadaptService,
-              public ns: NetworkService,
-              public vars: VariablesService,
-              public dialog: MatDialog) {
-  }
+  constructor(
+    private host: ElementRef,
+    private renderer: Renderer2,
+    private cd: ChangeDetectorRef,
+    private router: Router,
+    private config: AppConfig,
+    public pa: PolkadaptService,
+    public ns: NetworkService,
+    public vars: VariablesService,
+    public dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
     this.networks = Object.keys(this.config.networks);
     this.vars.network
-      .pipe(
-        takeUntil(this.destroyer),
-        distinctUntilChanged()
-      )
+      .pipe(takeUntil(this.destroyer), distinctUntilChanged())
       .subscribe((network) => {
         if (network) {
           this.networkLabel.next('Network');
@@ -86,8 +84,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
 
   openConnectionDialog(): void {
     this.dialog.open(PsConnectionDialogComponent, {
-      width: '600px'
+      width: '600px',
     });
   }
 }
-
