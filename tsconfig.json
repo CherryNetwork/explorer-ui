@@ -23,7 +23,8 @@
     "strictPropertyInitialization": false,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "useUnknownInCatchVariables": false
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
