@@ -48,8 +48,14 @@ ps-top-bar {
 }
 
 .ps-top-bar-brand svg {
-  width: 93px;
+  width: 85px;
   height: 40px;
+  order: 0;
+}
+
+.ps-top-bar-brand img {
+  width: 93px;
+  height: 32px;
   order: 0;
 }
 
@@ -80,7 +86,7 @@ ps-top-bar {
 .ps-top-bar-network-selector,
 .ps-top-bar-network-option {
   &:before {
-    content: '';
+    content: "";
     background-size: contain;
     background-repeat: no-repeat;
     background-position: 50% 50%;
@@ -96,7 +102,7 @@ ps-top-bar {
   &:before {
     display: inline-block;
     margin-right: 0.3rem;
-    background-image: url('../../../assets/chains/polkadot.svg');
+    background-image: url("../../../assets/chains/polkadot.svg");
   }
 }
 
@@ -104,7 +110,7 @@ ps-top-bar {
   &:before {
     display: inline-block;
     margin-right: 0.3rem;
-    background-image: url('../../../assets/chains/kusama.svg');
+    background-image: url("../../../assets/chains/kusama.svg");
   }
 }
 
@@ -112,7 +118,14 @@ ps-top-bar {
   &:before {
     display: inline-block;
     margin-right: 0.3rem;
-    background-image: url('../../../assets/chains/rococo.svg');
+    background-image: url("../../../assets/chains/rococo.svg");
+  }
+}
+.ps-top-bar-network-option--cherry {
+  &:before {
+    display: inline-block;
+    margin-right: 0.3rem;
+    background-image: url("../../../assets/chains/cherry_mini_logo.svg");
   }
 }
 
